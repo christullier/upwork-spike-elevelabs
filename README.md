@@ -25,7 +25,13 @@ A small local app built on the **ElevenLabs API** and the **Eleven v4** model. Y
 4. **Start it.** `uv run python -m app` (or `uv run python -m app --mock` to try it for free, with tone clips instead of a voice).
 5. **Open it.** Go to **http://localhost:8000**, paste a chapter, pick a voice and click **Generate**.
 
-Plan note: 192 kbps MP3 output needs the ElevenLabs **Creator** plan or above.
+**Plan and key notes:**
+- **Below the Creator plan:** the API refuses 192 kbps MP3. The app then asks for 128 kbps automatically and still exports the final MP3 at 192 kbps. Re-encoding doesn't add quality: the source is still 128 kbps.
+- **Free plan:** audio is for non-commercial use and must credit ElevenLabs.
+- **Restricted API keys:** the key needs *Text to Speech* permission.
+  - *Voices read:* without it, the picker shows ElevenLabs' built-in premade voices.
+  - *Voices write:* needed for cloning.
+  - *Pronunciation dictionaries write:* needed for IPA rules.
 
 ## How it keeps the voice consistent
 

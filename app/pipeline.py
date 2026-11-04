@@ -160,7 +160,9 @@ def run_chunks(run_dir: Path, manifest: dict, tts, progress: Progress = lambda _
             raise ChunkFailed(i + 1, total, exc) from exc
 
         (run_dir / entry["file"]).write_bytes(result.audio)
-        entry.update(
+        # If the plan refused 192 kbps, the client fell back to 128 kbps; keep asking for that.
+        manifest["output_format"] = result.output_format
+        entry.update(output_format=result.output_format, 
             status="done", request_id=result.request_id, completed_at=now(),
             generation_seconds=round(now() - started, 2),
             character_cost=result.character_cost if result.character_cost is not None else len(text),

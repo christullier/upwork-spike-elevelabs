@@ -32,8 +32,20 @@ def main() -> None:
     args = parser.parse_args()
 
     tts = ElevenLabsTTS()
-    models = {m.model_id for m in tts.client.models.list()}
-    print(f"eleven_v4 available: {MODEL_ID in models}")
+    # Free checks first. Restricted keys may lack some permissions; report, don't fail.
+    try:
+        models = {m.model_id for m in tts.client.models.list()}
+        print(f"eleven_v4 listed for this account: {MODEL_ID in models}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"(skipped model list: {getattr(exc, 'body', exc)})")
+    try:
+        voices = tts.list_voices()
+        if any(v["category"].startswith("premade ·") for v in voices):
+            print("key can't list voices (no voices_read); the picker will show built-in premade voices")
+        else:
+            print(f"voices visible to this key: {len(voices)}")
+    except Exception as exc:  # noqa: BLE001
+        print(f"WARNING: cannot list voices, enable 'voices_read' on the key: {getattr(exc, 'body', exc)}")
 
     print(f"Sending {len(TEXT)} characters (+ {len(NEXT)} chars of next_text context) …")
     try:
@@ -48,7 +60,9 @@ def main() -> None:
     print(f"OK  request-id={result.request_id}")
     print(f"    billed characters={result.character_cost} (text was {len(TEXT)}; "
           f"{'next_text was not billed' if result.character_cost == len(TEXT) else 'compare with text length'})")
-    print(f"    {OUTPUT_FORMAT}, {len(result.audio):,} bytes, {duration(path):.1f}s → {path}")
+    if result.output_format != OUTPUT_FORMAT:
+        print(f"    NOTE: plan refused {OUTPUT_FORMAT}; used {result.output_format} (final file is still encoded at 192k)")
+    print(f"    {result.output_format}, {len(result.audio):,} bytes, {duration(path):.1f}s → {path}")
 
 
 if __name__ == "__main__":

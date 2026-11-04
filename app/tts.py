@@ -16,6 +16,15 @@ from typing import Callable
 
 MODEL_ID = "eleven_v4"
 OUTPUT_FORMAT = "mp3_44100_192"  # 44.1 kHz / 192 kbps MP3 (Creator plan or above)
+FALLBACK_FORMAT = "mp3_44100_128"  # allowed on every plan; used automatically if 192 is refused
+
+# ElevenLabs premade voices, shown when the key can't list voices (no voices_read permission).
+PREMADE_VOICES = [
+    ("JBFqnCBsd6RMkjVDRZzb", "George", "male, warm narrator"),
+    ("onwK4e9ZLuTAKqWW03F9", "Daniel", "male, authoritative"),
+    ("EXAVITQu4vr4xnSDxMaL", "Sarah", "female, soft"),
+    ("XB0fDUnXU5powFXDhCwa", "Charlotte", "female, conversational"),
+]
 RETRY_STATUS = {429, 500, 502, 503, 504}
 
 
@@ -24,6 +33,7 @@ class TTSResult:
     audio: bytes
     request_id: str
     character_cost: int | None = None
+    output_format: str = OUTPUT_FORMAT
 
 
 class TTSError(Exception):
@@ -69,7 +79,16 @@ class ElevenLabsTTS:
         self.client = ElevenLabs(api_key=api_key) if api_key else ElevenLabs()
 
     def list_voices(self) -> list[dict]:
-        resp = self.client.voices.get_all()
+        from elevenlabs.core.api_error import ApiError
+
+        try:
+            resp = self.client.voices.get_all()
+        except ApiError as exc:
+            if exc.status_code not in (401, 403):
+                raise
+            # Restricted key: fall back to known premade voices so the app still works.
+            return [{"voice_id": vid, "name": name, "category": f"premade · {desc}", "preview_url": None, "labels": {}}
+                    for vid, name, desc in PREMADE_VOICES]
         return [
             {"voice_id": v.voice_id, "name": v.name, "category": v.category,
              "preview_url": v.preview_url, "labels": v.labels or {}}
@@ -119,13 +138,18 @@ class ElevenLabsTTS:
                 audio = b"".join(resp.data)  # read the whole body before the request ID is reused
                 headers = {k.lower(): v for k, v in resp.headers.items()}
         except ApiError as exc:
+            if exc.status_code == 403 and "output_format_not_allowed" in str(exc.body) and output_format != FALLBACK_FORMAT:
+                # Plan below Creator: 192 kbps isn't allowed. Ask for 128 kbps instead (nothing was billed).
+                return self.synthesize(text, voice_id, model_id, previous_request_ids=previous_request_ids,
+                                       previous_text=previous_text, next_text=next_text,
+                                       dictionaries=dictionaries, output_format=FALLBACK_FORMAT)
             retry_after = (exc.headers or {}).get("retry-after")
             raise TTSError(f"ElevenLabs returned {exc.status_code}: {exc.body}", exc.status_code,
                            float(retry_after) if retry_after and retry_after.isdigit() else None) from exc
 
         cost = headers.get("character-cost") or headers.get("x-character-count")
         return TTSResult(audio=audio, request_id=headers.get("request-id", ""),
-                         character_cost=int(cost) if cost and cost.isdigit() else None)
+                         character_cost=int(cost) if cost and cost.isdigit() else None, output_format=output_format)
 
 
 class MockTTS:
