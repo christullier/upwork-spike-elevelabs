@@ -80,7 +80,24 @@
   /* result */
   #result { padding: 32px 0; border-top: 1px solid var(--line); }
   #result h2 { font: 400 26px/1.2 var(--serif); margin: 0 0 4px; }
-  audio { width: 100%; margin: 18px 0 12px; }
+  /* player */
+  .player { display: flex; align-items: center; gap: 14px; margin: 20px 0 14px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .player .pp { width: 40px; height: 40px; flex: none; border-radius: 50%; padding: 0; border: 0; background: var(--ink); color: var(--paper);
+    display: grid; place-items: center; }
+  .player .pp svg { width: 14px; height: 14px; fill: currentColor; }
+  .track { position: relative; flex: 1; height: 24px; display: flex; align-items: center; }
+  .track input { -webkit-appearance: none; appearance: none; width: 100%; height: 24px; margin: 0; background: transparent; cursor: pointer; position: relative; z-index: 1; }
+  .track input::-webkit-slider-runnable-track { height: 4px; border-radius: 2px;
+    background: linear-gradient(to right, var(--ink) var(--pos, 0%), var(--line) var(--pos, 0%)); }
+  .track input::-moz-range-track { height: 4px; border-radius: 2px; background: var(--line); }
+  .track input::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--ink); }
+  .track input::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border-radius: 50%; background: var(--ink); border: 0; }
+  .track input::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--ink); border: 0; }
+  .track .tick { position: absolute; top: 5px; bottom: 5px; width: 2px; margin-left: -1px; background: var(--accent); border-radius: 1px; pointer-events: none; z-index: 2; opacity: .85; }
+  /* join marker in the transcript */
+  #words .join { display: inline-block; width: 2px; height: 1.05em; margin: 0 .35em 0 .15em; vertical-align: -.15em;
+    background: var(--accent); opacity: .7; border-radius: 1px; cursor: pointer; }
+  #words .join:hover { opacity: 1; }
   #words { font: 19px/1.7 var(--serif); color: var(--muted); margin: 6px 0 22px; }
   #words span { cursor: pointer; border-radius: 3px; }
   #words span:hover { color: var(--ink); }
@@ -212,7 +229,13 @@
   <section id="result" hidden>
     <h2>Your audiobook</h2>
     <div id="r-line" class="sub" style="font-size:14px"></div>
-    <audio id="player" controls preload="metadata"></audio>
+    <audio id="player" preload="metadata"></audio>
+    <div class="player">
+      <button type="button" class="pp" id="pp" aria-label="Play"></button>
+      <span id="t-now">0:00</span>
+      <div class="track" id="track"><input type="range" id="seek" min="0" max="1000" value="0" step="1" aria-label="Seek"></div>
+      <span id="t-total">0:00</span>
+    </div>
     <p id="words" hidden></p>
     <div class="row">
       <span id="seams" class="row" style="gap:8px"></span>
@@ -384,7 +407,8 @@ function renderResult(run, base, scroll = true) {
     b.onclick = () => { player.currentTime = Math.max(0, t - 4); player.play(); };
     $("seams").appendChild(b);
   });
-  renderWords(base);
+  renderWords(base, run.seams_seconds);
+  RUN_SEAMS = run.seams_seconds; RUN_DURATION = run.duration_seconds; drawTicks(); syncPlayer();
   $("downloads").innerHTML = ["mp3", "wav"].map((k) => `<a class="link" href="${base}${run.outputs[k]}" download>Download ${k.toUpperCase()}</a>`).join("");
 
   const a = run.acx, m = a.measured_mp3, w = a.measured_wav;
@@ -413,12 +437,19 @@ function renderResult(run, base, scroll = true) {
 
 /* ---------- clickable transcript (needs words.json: [[word, start, end], …]) ---------- */
 let WORDS = [];
-async function renderWords(base) {
+async function renderWords(base, seams = []) {
   const box = $("words"); box.hidden = true; WORDS = [];
   const data = await getJSON(base + "words.json").catch(() => null);
   if (!data?.words?.length) return;
   box.innerHTML = "";
+  const todo = [...seams].sort((a, b) => a - b);
   WORDS = data.words.map(([w, s, e], i) => {
+    if (todo.length && s >= todo[0]) {
+      const t = todo.shift(), bar = document.createElement("i");
+      bar.className = "join"; bar.title = "Join between sections"; bar.setAttribute("aria-hidden", "true");
+      bar.onclick = () => { const p = $("player"); p.currentTime = Math.max(0, t - 4); p.play(); };
+      box.append(bar);
+    }
     const el = document.createElement("span");
     el.textContent = w; el.onclick = () => { const p = $("player"); p.currentTime = s; p.play(); };
     box.append(el, i < data.words.length - 1 ? " " : "");
@@ -439,6 +470,35 @@ function paintWords() {
 (function tick() { if (!$("player").paused) paintWords(); requestAnimationFrame(tick); })();
 $("player").addEventListener("seeked", paintWords);
 $("player").addEventListener("emptied", () => { lastWord = -2; });
+
+/* ---------- player ---------- */
+let RUN_SEAMS = [], RUN_DURATION = 0, scrubbing = false;
+const ICON = { play: '<svg viewBox="0 0 14 14"><path d="M3 1.5v11l9.5-5.5z"/></svg>',
+               pause: '<svg viewBox="0 0 14 14"><path d="M2.5 1.5h3v11h-3zM8.5 1.5h3v11h-3z"/></svg>' };
+const dur = () => (isFinite($("player").duration) && $("player").duration) || RUN_DURATION || 0;
+function drawTicks() {
+  $("track").querySelectorAll(".tick").forEach((t) => t.remove());
+  const d = dur(); if (!d) return;
+  RUN_SEAMS.forEach((s) => {
+    const t = document.createElement("span"); t.className = "tick"; t.title = "Join between sections";
+    // thumb is 12px wide, so the usable track is inset 6px on each side
+    t.style.left = `calc(6px + (100% - 12px) * ${Math.min(1, s / d)})`;
+    $("track").appendChild(t);
+  });
+}
+function syncPlayer() {
+  const p = $("player"), d = dur(), frac = d ? p.currentTime / d : 0;
+  if (!scrubbing) $("seek").value = Math.round(frac * 1000);
+  $("seek").style.setProperty("--pos", `${($("seek").value / 10)}%`);
+  $("t-now").textContent = clock(p.currentTime); $("t-total").textContent = clock(d);
+  $("pp").innerHTML = p.paused ? ICON.play : ICON.pause; $("pp").setAttribute("aria-label", p.paused ? "Play" : "Pause");
+}
+$("pp").onclick = () => { const p = $("player"); p.paused ? p.play() : p.pause(); };
+$("seek").addEventListener("input", () => { scrubbing = true; $("player").currentTime = $("seek").value / 1000 * dur(); syncPlayer(); });
+$("seek").addEventListener("change", () => { scrubbing = false; });
+["timeupdate", "play", "pause", "seeked", "ended"].forEach((e) => $("player").addEventListener(e, syncPlayer));
+$("player").addEventListener("loadedmetadata", () => { drawTicks(); syncPlayer(); });
+syncPlayer();
 
 /* ---------- boot ---------- */
 (async function boot() {
