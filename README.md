@@ -82,7 +82,12 @@ This repo already includes a ready-made `site/` from one real run: the 30-second
 
 - **Netlify / GitHub Pages:** publish the `site/` folder as-is.
 
-Then add a custom domain such as `demo.hueman.dev` in the host's dashboard; it shows you the CNAME record to create.
+Then add a custom domain in the host's dashboard; it shows you the CNAME record to create.
+
+**Live copy: https://tts.hueman.dev** (also https://audiobook-tts-demo.vercel.app)
+- **Hosting:** Vercel project `audiobook-tts-demo`. DNS is a Cloudflare CNAME `tts` → `cname.vercel-dns.com`, not proxied.
+- **What Vercel serves:** the text files in `site/`, plus [`deploy/vercel.json`](deploy/vercel.json).
+- **Audio:** those rewrites serve the two audio files from jsDelivr, pinned to the commit that added them. The files stay on this site's URL, so the download buttons still work.
 
 ## Notes from the ElevenLabs docs (checked Nov 2026)
 

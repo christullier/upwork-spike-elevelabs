@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/demo/audiobook.mp3", "destination": "https://cdn.jsdelivr.net/gh/christullier/upwork-spike-elevelabs@3a39ae792c832a16eb0c56a55cd7992db47a52b2/site/demo/audiobook.mp3" },
+    { "source": "/demo/audiobook.wav", "destination": "https://cdn.jsdelivr.net/gh/christullier/upwork-spike-elevelabs@3a39ae792c832a16eb0c56a55cd7992db47a52b2/site/demo/audiobook.wav" }
+  ]
+}
