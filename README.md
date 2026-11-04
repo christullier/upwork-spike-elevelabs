@@ -86,7 +86,7 @@ Then add a custom domain in the host's dashboard; it shows you the CNAME record 
 
 **Live copy: https://tts.hueman.dev** (also https://audiobook-tts-demo.vercel.app)
 - **Hosting:** Vercel project `audiobook-tts-demo`. DNS is a Cloudflare CNAME `tts` → `cname.vercel-dns.com`, not proxied.
-- **Deploys from git:** the project is connected to this GitHub repo with Root Directory `site`, no framework and no build command. Every push to the default branch redeploys production; other branches get preview URLs. To update the demo, re-export a run into `site/` and push.
+- **Deploys from git:** the project is connected to this GitHub repo with Root Directory `site`, no framework and no build command. Every push to `master` redeploys production; other branches get preview URLs. To update the demo, re-export a run into `site/` and push.
 
 ## Notes from the ElevenLabs docs (checked Nov 2026)
 
