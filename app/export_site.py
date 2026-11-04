@@ -14,6 +14,7 @@ from pathlib import Path
 
 STATIC = Path(__file__).resolve().parent / "static"
 COPY = ["run.json", "input.txt", "audiobook.mp3", "audiobook.wav"]
+OPTIONAL = ["words.json"]  # word timings for the clickable transcript (scripts/align_words.py)
 
 
 def export(run_dir: Path, out: Path) -> Path:
@@ -26,6 +27,9 @@ def export(run_dir: Path, out: Path) -> Path:
     shutil.copy(STATIC / "index.html", out / "index.html")
     for name in COPY:
         shutil.copy(run_dir / name, out / "demo" / name)
+    for name in OPTIONAL:
+        if (run_dir / name).exists():
+            shutil.copy(run_dir / name, out / "demo" / name)
     (out / "config.json").write_text(json.dumps({"mode": "replay", "model_id": manifest["model_id"]}, indent=2))
     return out
 

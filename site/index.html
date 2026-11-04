@@ -31,7 +31,6 @@
   /* sections */
   .sec { display: grid; grid-template-columns: 170px 1fr; gap: 8px 32px; padding: 28px 0; border-top: 1px solid var(--line); }
   .sec > header h2 { font: 400 20px/1.25 var(--serif); margin: 0 0 4px; }
-  .sec > header p { margin: 0; font-size: 13px; color: var(--muted); }
   .sec > div { min-width: 0; }
 
   /* controls */
@@ -82,6 +81,11 @@
   #result { padding: 32px 0; border-top: 1px solid var(--line); }
   #result h2 { font: 400 26px/1.2 var(--serif); margin: 0 0 4px; }
   audio { width: 100%; margin: 18px 0 12px; }
+  #words { font: 19px/1.7 var(--serif); color: var(--muted); margin: 6px 0 22px; }
+  #words span { cursor: pointer; border-radius: 3px; }
+  #words span:hover { color: var(--ink); }
+  #words span.past { color: var(--ink); }
+  #words span.now { color: var(--accent); }
   .seam { border-color: var(--accent); color: var(--accent); }
   .verdict { margin: 18px 0 0; font-size: 15px; }
   .verdict b.ok { color: var(--ok); } .verdict b.bad { color: var(--bad); }
@@ -100,10 +104,9 @@
 
   /* hosted demo: what it proves */
   #proof { margin: 0 0 8px; padding: 0; list-style: none; counter-reset: p; }
-  #proof li { counter-increment: p; display: grid; grid-template-columns: 28px 1fr; padding: 14px 0; border-top: 1px solid var(--line); }
+  #proof li { counter-increment: p; display: grid; grid-template-columns: 28px 1fr; padding: 10px 0; border-top: 1px solid var(--line); }
   #proof li::before { content: counter(p); font: 400 18px/1.3 var(--serif); color: var(--accent); }
-  #proof b { display: block; font-weight: 600; }
-  #proof span { color: var(--soft); font-size: 14px; }
+  #proof b { font-weight: 600; }
 
   .howto { font: 400 26px/1.2 var(--serif); margin: 56px 0 18px; }
   #showcase { margin-top: 8px; }
@@ -128,21 +131,21 @@
 <main>
   <p class="brand">Audiobook TTS · ElevenLabs Eleven v4</p>
   <h1>One chapter in, one finished audiobook out.</h1>
-  <p class="lede">Paste a chapter, choose or clone a narrator, and export a single MP3 or WAV ready for Audible.</p>
+  <p class="lede">Paste a chapter, pick a narrator, get one MP3 or WAV ready for Audible.</p>
   <p id="banner" class="note" hidden></p>
 
   <section id="showcase" hidden>
     <ol id="proof">
-      <li><span><b>Eleven v4 throughout</b>Every section of the chapter is narrated by ElevenLabs’ Eleven v4 model.</span></li>
-      <li><span><b>Voice cloning built in</b>Clone a narrator from 1–3 clean samples and it appears in the voice list. Turned off on this hosted copy.</span></li>
-      <li><span><b>Whole chapters, one file</b>3,000+ words are split at paragraph breaks, narrated in order and joined into one file. This demo is a short excerpt so you can hear a join right away.</span></li>
-      <li><span><b>Consistent voice and clear names</b>Each section picks up the previous one’s delivery, so the voice and accent don’t drift. A pronunciation list fixes names like Irene → “Eye-ree-nee”.</span></li>
+      <li><b>Eleven v4 throughout</b></li>
+      <li><b>Voice cloning built in</b></li>
+      <li><b>Whole chapters joined into one file</b></li>
+      <li><b>Consistent voice, correct names</b></li>
     </ol>
   </section>
 
   <div id="form">
     <section class="sec">
-      <header><h2>Text</h2><p>A full chapter is fine.</p></header>
+      <header><h2>Text</h2></header>
       <div>
         <textarea id="text" placeholder="Paste a chapter here…" aria-label="Chapter text"></textarea>
         <div class="row" style="margin-top:10px">
@@ -157,7 +160,7 @@
     </section>
 
     <section class="sec">
-      <header><h2>Narrator</h2><p>Any voice on your ElevenLabs account.</p></header>
+      <header><h2>Narrator</h2></header>
       <div>
         <select id="voice" style="width:100%;max-width:420px" aria-label="Voice"><option>Loading voices…</option></select>
         <div id="voice-note" class="hint" hidden></div>
@@ -166,7 +169,7 @@
           <form id="clone">
             <input type="text" name="name" placeholder="Name, e.g. “Sarah – narration”" required>
             <div><input type="file" name="files" accept="audio/*" multiple required>
-              <span class="sub">1–3 clean recordings of one speaker. No music or background noise.</span></div>
+              <span class="sub">1–3 clean recordings of one speaker.</span></div>
             <label class="check"><input type="checkbox" name="consent" value="true" required>
               <span>I have the speaker’s permission to clone this voice.</span></label>
             <div class="row"><button type="submit">Create voice</button><span id="clone-msg" class="sub"></span></div>
@@ -176,24 +179,22 @@
     </section>
 
     <section class="sec">
-      <header><h2>Pronunciation</h2><p>Names and words the narrator should say a certain way.</p></header>
+      <header><h2>Pronunciation</h2></header>
       <div>
         <div id="rules"></div>
         <button id="add-rule" type="button" class="link">Add a word</button>
-        <p class="hint"><i>Spelling</i> rewrites the word before it’s read. <i>IPA</i> gives an exact phonetic spelling.</p>
       </div>
     </section>
 
     <section class="sec">
-      <header><h2>Export</h2><p>MP3 (192 kbps) and WAV.</p></header>
+      <header><h2>Export</h2></header>
       <div>
         <label class="check"><input type="checkbox" id="acx">
-          <span>Level for Audible (ACX)<span class="sub">Sets loudness to ACX specs and adds room tone at the start and end.</span></span></label>
+          <span>Level for Audible (ACX)</span></label>
         <details class="tech" style="margin-top:18px;border:0;padding:0">
           <summary>Advanced</summary>
           <label class="row" style="margin-top:10px;gap:10px">Section length
             <input type="number" id="limit" min="100" max="10000" step="100" value="9000" style="width:96px"> characters</label>
-          <p class="hint">Eleven v4 takes up to 10,000 characters per request. Sections always end at a paragraph or sentence.</p>
         </details>
       </div>
     </section>
@@ -212,6 +213,7 @@
     <h2>Your audiobook</h2>
     <div id="r-line" class="sub" style="font-size:14px"></div>
     <audio id="player" controls preload="metadata"></audio>
+    <p id="words" hidden></p>
     <div class="row">
       <span id="seams" class="row" style="gap:8px"></span>
       <span id="downloads" class="row" style="gap:14px;margin-left:auto"></span>
@@ -360,11 +362,11 @@ async function replay() {
   const n = REPLAY.chunks.length;
   $("result").hidden = true;
   for (let i = 0; i < n; i++) {
-    showProgress(`Narrating section ${i + 1} of ${n}…`, i, n, `(took ${REPLAY.chunks[i].generation_seconds}s on the real API)`);
+    showProgress(`Narrating section ${i + 1} of ${n}…`, i, n, "");
     await sleep(Math.min(2500, 1000 * (REPLAY.chunks[i].generation_seconds || 1)));
   }
   showProgress("Joining sections and checking loudness…", 1, 1, ""); await sleep(600);
-  showProgress("Done.", 1, 1, "This was a replay of the saved run.");
+  showProgress("Done.", 1, 1, "");
   renderResult(REPLAY, "demo/");
 }
 
@@ -382,6 +384,7 @@ function renderResult(run, base, scroll = true) {
     b.onclick = () => { player.currentTime = Math.max(0, t - 4); player.play(); };
     $("seams").appendChild(b);
   });
+  renderWords(base);
   $("downloads").innerHTML = ["mp3", "wav"].map((k) => `<a class="link" href="${base}${run.outputs[k]}" download>Download ${k.toUpperCase()}</a>`).join("");
 
   const a = run.acx, m = a.measured_mp3, w = a.measured_wav;
@@ -408,22 +411,52 @@ function renderResult(run, base, scroll = true) {
   if (scroll) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+/* ---------- clickable transcript (needs words.json: [[word, start, end], …]) ---------- */
+let WORDS = [];
+async function renderWords(base) {
+  const box = $("words"); box.hidden = true; WORDS = [];
+  const data = await getJSON(base + "words.json").catch(() => null);
+  if (!data?.words?.length) return;
+  box.innerHTML = "";
+  WORDS = data.words.map(([w, s, e], i) => {
+    const el = document.createElement("span");
+    el.textContent = w; el.onclick = () => { const p = $("player"); p.currentTime = s; p.play(); };
+    box.append(el, i < data.words.length - 1 ? " " : "");
+    return { el, s, e };
+  });
+  box.hidden = false; paintWords();
+}
+let lastWord = -2;
+function paintWords() {
+  if (!WORDS.length) return;
+  const t = $("player").currentTime;
+  let i = -1;
+  for (let k = 0; k < WORDS.length && WORDS[k].s <= t; k++) i = k;
+  if (i === lastWord) return;
+  lastWord = i;
+  WORDS.forEach((w, k) => { w.el.classList.toggle("past", k < i); w.el.classList.toggle("now", k === i); });
+}
+(function tick() { if (!$("player").paused) paintWords(); requestAnimationFrame(tick); })();
+$("player").addEventListener("seeked", paintWords);
+$("player").addEventListener("emptied", () => { lastWord = -2; });
+
 /* ---------- boot ---------- */
 (async function boot() {
   const cfg = await getJSON("config.json").catch(() => ({ mode: "live" }));
   MODE = cfg.mode;
   if (MODE === "mock") {
     $("banner").hidden = false;
-    $("banner").textContent = "Test mode: no ElevenLabs calls and no credits used. Each section is a tone the length of its text, so everything else (joining, leveling, export) can be tried for free.";
+    $("banner").textContent = "Test mode: no ElevenLabs calls, no credits used.";
   }
   if (MODE === "replay") {
     REPLAY = await getJSON("demo/run.json");
     $("banner").hidden = false;
-    $("banner").textContent = "This hosted page plays back a run made with the real ElevenLabs API. The app itself runs on your own computer with your own API key.";
+    $("banner").textContent = "A replay of a real ElevenLabs run. Click any word to jump to it.";
     $("showcase").hidden = false;
     $("banner").after($("result"));
     renderResult(REPLAY, "demo/", false);
     $("text").value = await (await fetch("demo/input.txt")).text(); $("text").readOnly = true;
+    $("text").closest(".sec").hidden = true;
     $("file").disabled = true; document.querySelectorAll(".live-only").forEach((el) => el.hidden = true);
     $("voice").innerHTML = `<option>${esc(REPLAY.voice.name)}</option>`; $("voice").disabled = true;
     $("clone").querySelectorAll("input,button").forEach((el) => el.disabled = true);
