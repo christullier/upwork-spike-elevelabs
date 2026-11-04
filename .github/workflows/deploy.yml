@@ -1,21 +1,22 @@
-name: Deploy demo to Cloudflare
+name: Deploy demo to Cloudflare Pages
 
 on:
   push:
     branches: [master]
     paths:
       - "site/**"
-      - "wrangler.jsonc"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy
+          command: pages deploy site --project-name=audiobook-demo --branch=master
