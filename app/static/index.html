@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Audiobook TTS</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --card: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e3e1dc;
+    --accent: #3b5bdb; --accent-ink: #ffffff; --ok: #2b8a3e; --bad: #c92a2a; --warn-bg: #fff4e0; --warn-ink: #7a4b00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #151517; --card: #1f1f22; --ink: #ececee; --muted: #9a9aa2; --line: #333338;
+            --accent: #7c93ff; --accent-ink: #0d0d10; --ok: #69db7c; --bad: #ff8787; --warn-bg: #3a2c12; --warn-ink: #ffd8a8; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 0 0 12px; }
+  .sub { color: var(--muted); margin: 0 0 20px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; display: none; }
+  textarea { width: 100%; min-height: 220px; resize: vertical; font: inherit; padding: 10px; border-radius: 8px;
+             border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  input[type=text], input[type=number], select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line);
+             background: var(--bg); color: var(--ink); max-width: 100%; }
+  button { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card);
+           color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; padding: 10px 22px; }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .stats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px; color: var(--muted); font-size: 14px; }
+  .stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  th { color: var(--muted); font-weight: 500; }
+  td input[type=text] { width: 100%; }
+  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
+  .ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  audio { width: 100%; margin: 8px 0; }
+  details summary { cursor: pointer; font-weight: 600; }
+  .error { color: var(--bad); white-space: pre-wrap; }
+  .scroll { overflow-x: auto; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Audiobook TTS</h1>
+  <p class="sub">Paste a chapter, pick a voice, get one continuous audio file. Eleven v4 · request stitching · ACX leveling.</p>
+  <div id="banner" class="banner"></div>
+
+  <section class="card">
+    <h2>1. Text</h2>
+    <textarea id="text" placeholder="Paste a chapter here (3,000+ words is fine)…"></textarea>
+    <div class="row" style="margin-top:10px">
+      <label class="row" style="gap:6px"><input type="file" id="file" accept=".txt,text/plain"></label>
+      <span class="live-only row"><button data-sample="excerpt">Load 30-second excerpt</button>
+      <button data-sample="chapter">Load sample chapter</button></span>
+    </div>
+    <div class="stats">
+      <span>Words <b id="s-words">0</b></span>
+      <span>Characters <b id="s-chars">0</b></span>
+      <span>Chunks <b id="s-chunks">0</b> <span id="s-sizes" class="muted"></span></span>
+      <span>Estimated cost <b id="s-cost">0</b> characters</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Voice</h2>
+    <div class="row">
+      <select id="voice" style="min-width:260px"><option>Loading voices…</option></select>
+      <span id="voice-note" class="muted"></span>
+    </div>
+    <details style="margin-top:14px" id="clone-box">
+      <summary>Clone a voice (optional)</summary>
+      <form id="clone" class="row" style="margin-top:10px">
+        <input type="text" name="name" placeholder="Voice name" required>
+        <input type="file" name="files" accept="audio/*" multiple required>
+        <label class="row" style="gap:6px"><input type="checkbox" name="consent" value="true" required> I have permission to clone this voice.</label>
+        <button type="submit">Create clone</button>
+        <span id="clone-msg" class="muted"></span>
+      </form>
+      <p class="muted">1–3 clean samples of one speaker, no music or background noise. The clone is added to your ElevenLabs account.</p>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>3. Pronunciations</h2>
+    <div class="scroll"><table>
+      <thead><tr><th style="width:30%">Word</th><th>How to say it</th><th style="width:120px">Type</th><th style="width:40px"></th></tr></thead>
+      <tbody id="rules"></tbody>
+    </table></div>
+    <div class="row" style="margin-top:8px"><button id="add-rule" type="button">+ Add word</button>
+      <span class="muted">Spelling = replaced in the text before sending. IPA = sent as an ElevenLabs pronunciation dictionary (v4 supports phoneme rules; no SSML).</span></div>
+  </section>
+
+  <section class="card">
+    <h2>4. Options</h2>
+    <div class="row">
+      <label>Max characters per chunk <input type="number" id="limit" min="100" max="10000" step="100" value="9000" style="width:100px"></label>
+      <label class="row" style="gap:6px"><input type="checkbox" id="acx"> Level to ACX specs (RMS −23 to −18 dB, peak ≤ −3 dB)</label>
+    </div>
+    <p class="muted">Eleven v4 accepts 10,000 characters per request; 9,000 leaves a margin. Chunks break at paragraphs, then sentences.</p>
+  </section>
+
+  <div class="row" style="margin-bottom:16px">
+    <button class="primary" id="go">Generate</button>
+    <span id="go-note" class="muted"></span>
+  </div>
+
+  <section class="card" id="progress-card" hidden>
+    <h2 id="p-title">Working…</h2>
+    <div class="bar"><div id="p-bar"></div></div>
+    <div id="p-msg" class="muted"></div>
+    <div id="p-error" class="error"></div>
+  </section>
+
+  <section class="card" id="result" hidden>
+    <h2>Result</h2>
+    <audio id="player" controls preload="metadata"></audio>
+    <div class="row" id="seams"></div>
+    <div class="row" style="margin-top:10px" id="downloads"></div>
+    <div class="stats" id="r-stats"></div>
+    <h2 style="margin-top:18px">Loudness (measured with ffmpeg astats)</h2>
+    <div class="scroll"><table id="measure"></table></div>
+    <h2 style="margin-top:18px">Chunks</h2>
+    <div class="scroll"><table id="chunks"></table></div>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => (n ?? 0).toLocaleString();
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+let MODE = "live", REPLAY = null;
+
+async function getJSON(url, opts) {
+  const r = await fetch(url, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || `${r.status} ${r.statusText}`);
+  return body;
+}
+const post = (url, data) => getJSON(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
+
+/* ---------- pronunciation table ---------- */
+function addRule(rule = { word: "", say: "", kind: "alias" }, readOnly = false) {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `<td><input type="text" class="w" placeholder="Siobhan"></td>
+    <td><input type="text" class="s" placeholder="Shiv-awn"></td>
+    <td><select class="k"><option value="alias">Spelling</option><option value="ipa">IPA</option></select></td>
+    <td><button type="button" title="Remove">×</button></td>`;
+  tr.querySelector(".w").value = rule.word; tr.querySelector(".s").value = rule.say; tr.querySelector(".k").value = rule.kind;
+  tr.querySelector("button").onclick = () => { tr.remove(); refreshEstimate(); };
+  tr.querySelectorAll("input,select").forEach((el) => { el.oninput = refreshEstimate; el.disabled = readOnly; });
+  tr.querySelector("button").disabled = readOnly;
+  $("rules").appendChild(tr);
+}
+const rules = () => [...$("rules").querySelectorAll("tr")].map((tr) => ({
+  word: tr.querySelector(".w").value, say: tr.querySelector(".s").value, kind: tr.querySelector(".k").value,
+})).filter((r) => r.word.trim() && r.say.trim());
+$("add-rule").onclick = () => addRule();
+
+/* ---------- estimate ---------- */
+function showEstimate(e) {
+  $("s-words").textContent = fmt(e.words); $("s-chars").textContent = fmt(e.characters);
+  $("s-chunks").textContent = e.chunks.length; $("s-cost").textContent = fmt(e.characters_billed);
+  $("s-sizes").textContent = e.chunks.length > 1 ? `(${e.chunks.map(fmt).join(" + ")})` : "";
+}
+let estTimer;
+function refreshEstimate() {
+  if (MODE === "replay") return;
+  clearTimeout(estTimer);
+  estTimer = setTimeout(async () => {
+    try { showEstimate(await post("/api/estimate", { text: $("text").value, rules: rules(), chunk_limit: +$("limit").value || 9000 })); }
+    catch (e) { /* ignore while typing */ }
+  }, 250);
+}
+$("text").oninput = refreshEstimate; $("limit").oninput = refreshEstimate;
+$("file").onchange = async (ev) => { const f = ev.target.files[0]; if (f) { $("text").value = await f.text(); refreshEstimate(); } };
+document.querySelectorAll("[data-sample]").forEach((b) => b.onclick = async () => {
+  $("text").value = (await getJSON(`/api/sample/${b.dataset.sample}`)).text;
+  if (b.dataset.sample === "excerpt") {
+    $("limit").value = 300;  // small chunks so a 30-second clip still has a seam to listen to
+    if (!rules().some((r) => r.word === "Irene")) addRule({ word: "Irene", say: "Eye-ree-nee", kind: "alias" });
+  } else $("limit").value = 9000;
+  refreshEstimate();
+});
+
+/* ---------- voices & cloning ---------- */
+async function loadVoices(selectId) {
+  try {
+    const voices = await getJSON("/api/voices");
+    $("voice").innerHTML = voices.map((v) => `<option value="${esc(v.voice_id)}">${esc(v.name)}${v.category ? ` · ${esc(v.category)}` : ""}</option>`).join("");
+    if (selectId) $("voice").value = selectId;
+  } catch (e) { $("voice").innerHTML = "<option value=''>Could not load voices</option>"; $("voice-note").textContent = e.message; }
+}
+$("clone").onsubmit = async (ev) => {
+  ev.preventDefault();
+  const form = new FormData(ev.target);
+  const n = form.getAll("files").length;
+  if (n < 1 || n > 3) { $("clone-msg").textContent = "Choose 1–3 audio files."; return; }
+  $("clone-msg").textContent = "Uploading…";
+  try {
+    const r = await getJSON("/api/clone", { method: "POST", body: form });
+    $("clone-msg").textContent = `Created “${r.name}”.`;
+    await loadVoices(r.voice_id);
+  } catch (e) { $("clone-msg").textContent = e.message; }
+};
+
+/* ---------- generate & progress ---------- */
+function showProgress(title, done, total, msg) {
+  $("progress-card").hidden = false; $("p-title").textContent = title;
+  $("p-bar").style.width = total ? `${Math.round(100 * done / total)}%` : "0%";
+  $("p-msg").textContent = msg || "";
+}
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+$("go").onclick = async () => {
+  $("go").disabled = true; $("p-error").textContent = ""; $("result").hidden = true;
+  try { MODE === "replay" ? await replay() : await generate(); }
+  finally { $("go").disabled = false; }
+};
+
+async function generate() {
+  const voice = $("voice").selectedOptions[0];
+  if (!voice || !voice.value) { $("p-error").textContent = "Pick a voice first."; $("progress-card").hidden = false; return; }
+  let job;
+  try {
+    job = await post("/api/generate", { text: $("text").value, voice_id: voice.value, voice_name: voice.textContent.split(" · ")[0],
+                                        rules: rules(), chunk_limit: +$("limit").value || 9000, acx: $("acx").checked });
+  } catch (e) { showProgress("Could not start", 0, 0, ""); $("p-error").textContent = e.message; return; }
+  while (true) {
+    await sleep(600);
+    const s = await getJSON(`/api/jobs/${job.job_id}`);
+    const title = s.stage === "export" ? "Joining & measuring audio…" : s.total ? `Chunk ${Math.min(s.done + 1, s.total)} of ${s.total}` : "Starting…";
+    showProgress(s.status === "complete" ? "Done" : title, s.stage === "export" || s.status === "complete" ? 1 : s.done, s.stage === "export" || s.status === "complete" ? 1 : s.total, s.message);
+    if (s.status === "complete") { renderResult(await getJSON(`/output/${s.run_id}/run.json`), `/output/${s.run_id}/`); return; }
+    if (s.status === "failed") {
+      $("p-title").textContent = s.failed_chunk ? `Stopped at chunk ${s.failed_chunk} of ${s.total}` : "Failed";
+      $("p-error").textContent = s.error + (s.failed_chunk ? "\n\nFinished chunks are saved. Click Generate again with the same text and voice to resume — you won't pay for them twice." : "");
+      return;
+    }
+  }
+}
+
+async function replay() {
+  const n = REPLAY.chunks.length;
+  for (let i = 0; i < n; i++) {
+    showProgress(`Chunk ${i + 1} of ${n}`, i, n, `Replaying saved run — this chunk took ${REPLAY.chunks[i].generation_seconds}s on the real API`);
+    await sleep(Math.min(2500, 1000 * (REPLAY.chunks[i].generation_seconds || 1)));
+  }
+  showProgress("Joining & measuring audio…", 1, 1, ""); await sleep(600);
+  showProgress("Done", 1, 1, "Replayed a real pre-generated run.");
+  renderResult(REPLAY, "demo/");
+}
+
+/* ---------- result ---------- */
+function renderResult(run, base) {
+  $("result").hidden = false;
+  const player = $("player"); player.src = base + run.outputs.mp3;
+  $("seams").innerHTML = "";
+  run.seams_seconds.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.textContent = `▶ Seam ${i + 1} → ${i + 2} (${t.toFixed(1)}s)`;
+    b.onclick = () => { player.currentTime = Math.max(0, t - 4); player.play(); };
+    $("seams").appendChild(b);
+  });
+  $("downloads").innerHTML = ["mp3", "wav"].map((k) => `<a href="${base}${run.outputs[k]}" download><button>Download ${k.toUpperCase()}</button></a>`).join("")
+    + `<a href="${base}run.json" target="_blank"><button>run.json</button></a>`;
+  $("r-stats").innerHTML = `<span>Voice <b>${esc(run.voice.name)}</b></span><span>Model <b>${run.model_id}</b></span>
+    <span>Length <b>${run.duration_seconds.toFixed(1)}s</b></span><span>Characters used <b>${fmt(run.characters_used)}</b></span>
+    <span>Run <b class="mono">${run.run_id}</b></span>`;
+  const a = run.acx, m = a.measured_mp3, w = a.measured_wav;
+  const db = (v) => v == null ? "silent" : `${v.toFixed(1)} dB`;
+  $("measure").innerHTML = `<tr><th></th><th>MP3 (192 kbps)</th><th>WAV</th><th>ACX target</th><th>Result</th></tr>
+    <tr><td>RMS</td><td>${db(m.rms_db)}</td><td>${db(w.rms_db)}</td><td>−23 to −18 dB</td><td class="${a.rms_ok ? "ok" : "bad"}">${a.rms_ok ? "Pass" : "Out of range"}</td></tr>
+    <tr><td>Peak</td><td>${db(m.peak_db)}</td><td>${db(w.peak_db)}</td><td>≤ −3 dB</td><td class="${a.peak_ok ? "ok" : "bad"}">${a.peak_ok ? "Pass" : "Too hot"}</td></tr>
+    <tr><td colspan="5" class="muted">${a.leveled ? `Leveled: ${a.gain_db >= 0 ? "+" : ""}${a.gain_db} dB gain, limiter at −4 dB, 0.75 s head / 2 s tail room tone.` : "Not leveled (tick “Level to ACX specs” to fix)."}</td></tr>`;
+  $("chunks").innerHTML = `<tr><th>#</th><th>Chars</th><th>Length</th><th>Request ID</th><th>Conditioned on</th><th>Starts with</th></tr>`
+    + run.chunks.map((c, i) => `<tr><td>${c.index}</td><td>${fmt(c.characters)}</td><td>${(run.chunk_durations[i] ?? 0).toFixed(1)}s</td>
+      <td class="mono">${(c.request_id || "").slice(0, 14)}…</td>
+      <td class="mono">${[c.context?.previous_request_ids ? "prev IDs: " + c.context.previous_request_ids.map((x) => x.slice(0, 10) + "…").join(", ") : (c.context?.previous_text_chars ? "previous_text" : ""), c.context?.next_text_chars ? "next_text" : ""].filter(Boolean).join(" + ") || "—"}</td>
+      <td>${esc(c.text.slice(0, 48))}…</td></tr>`).join("");
+  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ---------- boot ---------- */
+(async function boot() {
+  const cfg = await getJSON("config.json").catch(() => ({ mode: "live" }));
+  MODE = cfg.mode;
+  if (MODE === "mock") {
+    $("banner").style.display = "block";
+    $("banner").textContent = "Mock mode: no API calls, no credits. Each chunk is a tone clip the length of its text, so the whole pipeline (stitching, ffmpeg, leveling) can be tested for free.";
+  }
+  if (MODE === "replay") {
+    REPLAY = await getJSON("demo/run.json");
+    $("banner").style.display = "block";
+    $("banner").innerHTML = "<b>Demo:</b> this page replays a real run that was generated once with the ElevenLabs API (Eleven v4). Live generation is turned off on this hosted copy. Run the app locally to generate your own.";
+    $("text").value = await (await fetch("demo/input.txt")).text(); $("text").readOnly = true;
+    $("file").disabled = true; document.querySelectorAll(".live-only").forEach((el) => el.hidden = true);
+    $("voice").innerHTML = `<option>${esc(REPLAY.voice.name)}</option>`; $("voice").disabled = true;
+    $("clone").querySelectorAll("input,button").forEach((el) => el.disabled = true);
+    $("clone-msg").textContent = "Disabled in the hosted demo.";
+    REPLAY.pronunciations.forEach((r) => addRule(r, true)); $("add-rule").disabled = true;
+    $("limit").value = REPLAY.chunk_limit; $("limit").disabled = true;
+    $("acx").checked = REPLAY.acx.leveled; $("acx").disabled = true;
+    showEstimate({ words: REPLAY.words, characters: REPLAY.characters_input, characters_billed: REPLAY.characters_used,
+                   chunks: REPLAY.chunks.map((c) => c.characters) });
+    $("go-note").textContent = "Replays the saved run.";
+    return;
+  }
+  addRule({ word: "Siobhan", say: "Shiv-awn", kind: "alias" });
+  loadVoices();
+  refreshEstimate();
+})();
+</script>
+</body>
+</html>
