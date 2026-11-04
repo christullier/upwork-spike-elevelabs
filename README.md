@@ -3,7 +3,7 @@
 A small local app built on the **ElevenLabs API** and the **Eleven v4** model. You paste a chapter (3,000+ words is fine), pick a voice and click **Generate**. You get back one continuous MP3 or WAV with no change in the voice between sections, optionally leveled to Audible/ACX upload specs.
 
 ![Screenshot](docs/screenshot.png)
-*A real run: the 30-second excerpt in 2 chunks, voice "Roger", leveled to ACX. Replace `docs/screenshot.png` with your own capture any time.*
+*A real run: the 30-second excerpt in 2 chunks, voice "George", leveled to ACX. Replace `docs/screenshot.png` with your own capture any time.*
 
 ## What it does
 
@@ -66,7 +66,7 @@ A live copy on the open internet would let anyone spend your credits. The hosted
 uv run python -m app export-site output/<run-folder> --out site
 ```
 
-This repo already includes a ready-made `site/` from one real run: the 30-second excerpt, 500 characters, Eleven v4, voice "Roger". Deploy the `site/` folder:
+This repo already includes a ready-made `site/` from one real run: the 30-second excerpt, 500 characters, Eleven v4, voice "George". Deploy the `site/` folder:
 
 - **Cloudflare Pages:** run the command below, or in the dashboard connect the repo with build command *(none)* and output directory `site`.
 
