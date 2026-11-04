@@ -2,6 +2,7 @@
 
     python -m app                 # real ElevenLabs API (needs ELEVENLABS_API_KEY)
     python -m app --mock          # free: tone clips instead of speech (or MOCK_TTS=1)
+    python -m app --open          # also open the page in the browser (used by the Start launchers)
     python -m app export-site output/<run> [--out site]   # static replay demo for free hosting
 """
 
@@ -19,6 +20,7 @@ def serve(argv: list[str]) -> None:
     parser.add_argument("--mock", action="store_true", help="use free tone clips instead of ElevenLabs")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--open", action="store_true", help="open the page in the default browser once the server is up")
     args = parser.parse_args(argv)
 
     from .audio import ffmpeg_available
@@ -35,7 +37,13 @@ def serve(argv: list[str]) -> None:
     from .server import create_app
     from .tts import make_tts
 
-    print(f"Mode: {'MOCK (no API calls)' if mock else 'ElevenLabs'}  →  http://localhost:{args.port}")
+    url = f"http://localhost:{args.port}"
+    print(f"Mode: {'MOCK (no API calls)' if mock else 'ElevenLabs'}  →  {url}")
+    if args.open:
+        import threading
+        import webbrowser
+
+        threading.Timer(1.5, webbrowser.open, [url]).start()
     uvicorn.run(create_app(make_tts(mock)), host=args.host, port=args.port, log_level="warning")
 
 

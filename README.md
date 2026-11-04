@@ -1,9 +1,9 @@
 # Audiobook TTS: one chapter in, one seamless audio file out
 
-A small local app built on the **ElevenLabs API** and the **Eleven v4** model. You paste a chapter (3,000+ words is fine), pick a voice and click **Generate**. You get back one continuous MP3 or WAV with no change in the voice between sections, optionally leveled to Audible/ACX upload specs.
+A small local app built on the **ElevenLabs API** and the **Eleven v4** model. You paste a chapter (3,000+ words is fine), pick or clone a voice and click **Generate audiobook**. You get back one continuous MP3 or WAV with no change in the voice between sections, optionally leveled to Audible/ACX upload specs.
 
 ![Screenshot](docs/screenshot.png)
-*A real run: the 30-second excerpt in 2 chunks, voice "George", leveled to ACX. Replace `docs/screenshot.png` with your own capture any time.*
+*The hosted demo: a real run of the 30-second excerpt in 2 sections, voice "George", leveled to ACX. Replace `docs/screenshot.png` with your own capture any time.*
 
 ## What it does
 
@@ -12,7 +12,7 @@ A small local app built on the **ElevenLabs API** and the **Eleven v4** model. Y
 - **Pronunciations.** A small table of words and how to say them (e.g. *Siobhan → Shiv-awn*). You can also enter IPA, which is sent as an ElevenLabs pronunciation dictionary.
 - **Long text.** The text is split into chunks of up to about 9,000 characters (Eleven v4 accepts 10,000 per request). Splits happen at paragraphs first, then at sentences, never in the middle of a sentence.
 - **Reliable.** Busy or failed requests are retried automatically. If a chunk still fails, the app stops and tells you which one. Finished chunks are already saved, so clicking Generate again resumes the run without paying for them twice.
-- **Audiobook-ready export.** The chunks are joined with ffmpeg into a 44.1 kHz / 192 kbps MP3 and a WAV. An optional ACX setting levels the audio to RMS between −23 and −18 dB and peaks no higher than −3 dB. The page shows the *measured* numbers and a **▶ Seam** button that jumps to each join, so you can hear that it's seamless.
+- **Audiobook-ready export.** The chunks are joined with ffmpeg into a 44.1 kHz / 192 kbps MP3 and a WAV. An optional ACX setting levels the audio to RMS between −23 and −18 dB and peaks no higher than −3 dB. The page shows the *measured* numbers and a **▶ Hear the join** button that jumps to each join, so you can hear that it's seamless.
 - **A record of every run.** Each run gets its own folder, `output/<timestamp>/`, containing:
   - the chunk files and the final audio;
   - `run.json` (voice, model, chunk sizes, request IDs, characters used).
@@ -22,8 +22,8 @@ A small local app built on the **ElevenLabs API** and the **Eleven v4** model. Y
 1. **Install the tools.** You need [uv](https://docs.astral.sh/uv/) (or Python 3.11+) and ffmpeg (`brew install ffmpeg` on macOS, `sudo apt install ffmpeg` on Ubuntu).
 2. **Get the code.** `git clone <this repo> && cd upwork-spike-elevelabs`
 3. **Add your key.** `cp .env.example .env`, then paste your ElevenLabs API key after `ELEVENLABS_API_KEY=`.
-4. **Start it.** `uv run python -m app` (or `uv run python -m app --mock` to try it for free, with tone clips instead of a voice).
-5. **Open it.** Go to **http://localhost:8000**, paste a chapter, pick a voice and click **Generate**.
+4. **Start it.** Double-click **`Start Audiobook.command`** (macOS) or **`Start Audiobook.bat`** (Windows). It installs uv on first run if needed, creates `.env` if it's missing, and opens the app in your browser. From a terminal: `uv run python -m app --open` (add `--mock` to try it for free, with tone clips instead of a voice).
+5. **Use it.** The page is at **http://localhost:8000**. Paste a chapter, pick or clone a narrator and click **Generate audiobook**. Close the launcher window to stop the app.
 
 **Plan and key notes:**
 - **Below the Creator plan:** the API refuses 192 kbps MP3. The app then asks for 128 kbps automatically and still exports the final MP3 at 192 kbps. Re-encoding doesn't add quality: the source is still 128 kbps.

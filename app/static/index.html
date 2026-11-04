@@ -6,130 +6,227 @@
 <title>Audiobook TTS</title>
 <style>
   :root {
-    --bg: #f6f5f2; --card: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e3e1dc;
-    --accent: #3b5bdb; --accent-ink: #ffffff; --ok: #2b8a3e; --bad: #c92a2a; --warn-bg: #fff4e0; --warn-ink: #7a4b00;
+    --paper: #f7f4ee; --field: #fffdf9; --ink: #1c1a17; --soft: #3d3a35; --muted: #77716a; --line: #e2dcd1;
+    --accent: #a8431f; --ok: #2f6b3a; --bad: #b3261e; --note: #efe8da;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, "Book Antiqua", Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #151517; --card: #1f1f22; --ink: #ececee; --muted: #9a9aa2; --line: #333338;
-            --accent: #7c93ff; --accent-ink: #0d0d10; --ok: #69db7c; --bad: #ff8787; --warn-bg: #3a2c12; --warn-ink: #ffd8a8; }
+    :root { --paper: #181715; --field: #201f1c; --ink: #ede8df; --soft: #cfc9bf; --muted: #9a938a; --line: #34312c;
+            --accent: #e0835c; --ok: #7fbf8a; --bad: #f08a80; --note: #26241f; }
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { max-width: 860px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { font-size: 24px; margin: 0 0 4px; }
-  h2 { font-size: 16px; margin: 0 0 12px; }
-  .sub { color: var(--muted); margin: 0 0 20px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
-  .banner { background: var(--warn-bg); color: var(--warn-ink); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; display: none; }
-  textarea { width: 100%; min-height: 220px; resize: vertical; font: inherit; padding: 10px; border-radius: 8px;
-             border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
-  input[type=text], input[type=number], select { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line);
-             background: var(--bg); color: var(--ink); max-width: 100%; }
-  button { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--card);
-           color: var(--ink); cursor: pointer; }
-  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; padding: 10px 22px; }
-  button:disabled { opacity: .5; cursor: not-allowed; }
-  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-  .stats { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 10px; color: var(--muted); font-size: 14px; }
-  .stats b { color: var(--ink); font-variant-numeric: tabular-nums; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
-  th { color: var(--muted); font-weight: 500; }
-  td input[type=text] { width: 100%; }
-  .bar { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 var(--sans); }
+  main { max-width: 780px; margin: 0 auto; padding: 48px 20px 96px; }
+  a { color: inherit; }
+
+  /* header */
+  .brand { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 18px; }
+  h1 { font: 400 38px/1.12 var(--serif); letter-spacing: -.01em; margin: 0 0 12px; max-width: 17em; text-wrap: balance; }
+  .lede { font-size: 17px; color: var(--soft); margin: 0 0 28px; max-width: 34em; }
+  .note { background: var(--note); border-radius: 6px; padding: 10px 14px; font-size: 14px; color: var(--soft); margin: 0 0 36px; }
+
+  /* sections */
+  .sec { display: grid; grid-template-columns: 170px 1fr; gap: 8px 32px; padding: 28px 0; border-top: 1px solid var(--line); }
+  .sec > header h2 { font: 400 20px/1.25 var(--serif); margin: 0 0 4px; }
+  .sec > header p { margin: 0; font-size: 13px; color: var(--muted); }
+  .sec > div { min-width: 0; }
+
+  /* controls */
+  textarea, input[type=text], input[type=number], select {
+    font: inherit; color: var(--ink); background: var(--field); border: 1px solid var(--line); border-radius: 6px;
+    padding: 8px 10px; max-width: 100%; }
+  textarea { width: 100%; min-height: 240px; resize: vertical; font: 16px/1.6 var(--serif); padding: 14px 16px; }
+  textarea:read-only { color: var(--soft); }
+  :is(textarea, input, select, button, summary, .filebtn):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  select { padding-right: 28px; }
+  button, .filebtn { font: inherit; font-size: 14px; color: var(--ink); background: transparent; border: 1px solid var(--line);
+    border-radius: 6px; padding: 7px 12px; cursor: pointer; display: inline-block; text-decoration: none; line-height: 1.3; }
+  button:hover:not(:disabled), .filebtn:hover { border-color: var(--muted); }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .link { border: 0; padding: 0; color: var(--soft); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+  .link:hover:not(:disabled) { text-decoration-color: var(--soft); }
+  .primary { background: var(--ink); color: var(--paper); border-color: var(--ink); font-size: 16px; font-weight: 600; padding: 12px 28px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; cursor: pointer; }
+  .check input { margin: 4px 0 0; accent-color: var(--ink); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+  .meta { margin-top: 10px; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .hint { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+  .sub { display: block; font-size: 13px; color: var(--muted); }
+
+  /* voice clone */
+  details.clone { margin-top: 14px; }
+  details.clone > summary { list-style: none; display: inline-block; cursor: pointer; font-size: 14px; color: var(--soft);
+    text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--line); }
+  details.clone > summary::-webkit-details-marker { display: none; }
+  details.clone[open] > summary { margin-bottom: 12px; }
+  #clone { display: grid; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
+  #clone input[type=file] { font-size: 14px; max-width: 100%; }
+
+  /* pronunciations */
+  .rule { display: grid; grid-template-columns: 1fr 1.4fr 120px 32px; gap: 8px; margin-bottom: 8px; }
+  .rule input, .rule select { width: 100%; }
+  .rule .x { padding: 0; border: 0; font-size: 20px; color: var(--muted); }
+  .rule .x:hover:not(:disabled) { color: var(--ink); }
+
+  /* run */
+  .run { padding: 32px 0 8px; border-top: 1px solid var(--line); }
+  .bar { height: 3px; background: var(--line); margin: 22px 0 10px; overflow: hidden; }
   .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .3s; }
-  .ok { color: var(--ok); font-weight: 600; } .bad { color: var(--bad); font-weight: 600; }
-  .muted { color: var(--muted); font-size: 13px; }
-  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  audio { width: 100%; margin: 8px 0; }
-  details summary { cursor: pointer; font-weight: 600; }
-  .error { color: var(--bad); white-space: pre-wrap; }
-  .scroll { overflow-x: auto; }
+  #p-title { font-weight: 600; }
+  .error { color: var(--bad); white-space: pre-wrap; margin-top: 6px; }
+
+  /* result */
+  #result { padding: 32px 0; border-top: 1px solid var(--line); }
+  #result h2 { font: 400 26px/1.2 var(--serif); margin: 0 0 4px; }
+  audio { width: 100%; margin: 18px 0 12px; }
+  .seam { border-color: var(--accent); color: var(--accent); }
+  .verdict { margin: 18px 0 0; font-size: 15px; }
+  .verdict b.ok { color: var(--ok); } .verdict b.bad { color: var(--bad); }
+  .tech { margin-top: 24px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .tech > summary { cursor: pointer; font-size: 14px; color: var(--muted); }
+  .tech h3 { font-size: 13px; font-weight: 600; margin: 20px 0 6px; color: var(--soft); }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 7px 10px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
+  td.wrap { white-space: normal; min-width: 200px; }
+  th { color: var(--muted); font-weight: 500; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+  .mono { font-family: var(--mono); font-size: 12px; }
+  dl.facts { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; font-size: 13px; }
+  dl.facts dt { color: var(--muted); } dl.facts dd { margin: 0; overflow-wrap: anywhere; }
+
+  /* hosted demo: what it proves */
+  #proof { margin: 0 0 8px; padding: 0; list-style: none; counter-reset: p; }
+  #proof li { counter-increment: p; display: grid; grid-template-columns: 28px 1fr; padding: 14px 0; border-top: 1px solid var(--line); }
+  #proof li::before { content: counter(p); font: 400 18px/1.3 var(--serif); color: var(--accent); }
+  #proof b { display: block; font-weight: 600; }
+  #proof span { color: var(--soft); font-size: 14px; }
+
+  .howto { font: 400 26px/1.2 var(--serif); margin: 56px 0 18px; }
+  #showcase { margin-top: 8px; }
   [hidden] { display: none !important; }
+
+  @media (max-width: 720px) {
+    main { padding: 32px 16px 72px; }
+    h1 { font-size: 30px; }
+    .lede { font-size: 16px; }
+    .sec { grid-template-columns: 1fr; padding: 24px 0; }
+    .rule { grid-template-columns: 1fr 1fr 32px; }
+    .rule .k { grid-column: 1 / 3; grid-row: 2; }
+    .rule .x { grid-column: 3; grid-row: 1; }
+    .rule { padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+    .primary { width: 100%; }
+    #downloads { margin-left: 0 !important; width: 100%; }
+    textarea { min-height: 200px; }
+  }
 </style>
 </head>
 <body>
 <main>
-  <h1>Audiobook TTS</h1>
-  <p class="sub">Paste a chapter, pick a voice, get one continuous audio file. Eleven v4 · request stitching · ACX leveling.</p>
-  <div id="banner" class="banner"></div>
+  <p class="brand">Audiobook TTS · ElevenLabs Eleven v4</p>
+  <h1>One chapter in, one finished audiobook out.</h1>
+  <p class="lede">Paste a chapter, choose or clone a narrator, and export a single MP3 or WAV ready for Audible.</p>
+  <p id="banner" class="note" hidden></p>
 
-  <section class="card">
-    <h2>1. Text</h2>
-    <textarea id="text" placeholder="Paste a chapter here (3,000+ words is fine)…"></textarea>
-    <div class="row" style="margin-top:10px">
-      <label class="row" style="gap:6px"><input type="file" id="file" accept=".txt,text/plain"></label>
-      <span class="live-only row"><button data-sample="excerpt">Load 30-second excerpt</button>
-      <button data-sample="chapter">Load sample chapter</button></span>
-    </div>
-    <div class="stats">
-      <span>Words <b id="s-words">0</b></span>
-      <span>Characters <b id="s-chars">0</b></span>
-      <span>Chunks <b id="s-chunks">0</b> <span id="s-sizes" class="muted"></span></span>
-      <span>Estimated cost <b id="s-cost">0</b> characters</span>
-    </div>
+  <section id="showcase" hidden>
+    <ol id="proof">
+      <li><span><b>Eleven v4 throughout</b>Every section of the chapter is narrated by ElevenLabs’ Eleven v4 model.</span></li>
+      <li><span><b>Voice cloning built in</b>Clone a narrator from 1–3 clean samples and it appears in the voice list. Turned off on this hosted copy.</span></li>
+      <li><span><b>Whole chapters, one file</b>3,000+ words are split at paragraph breaks, narrated in order and joined into one file. This demo is a short excerpt so you can hear a join right away.</span></li>
+      <li><span><b>Consistent voice and clear names</b>Each section picks up the previous one’s delivery, so the voice and accent don’t drift. A pronunciation list fixes names like Irene → “Eye-ree-nee”.</span></li>
+    </ol>
   </section>
 
-  <section class="card">
-    <h2>2. Voice</h2>
-    <div class="row">
-      <select id="voice" style="min-width:260px"><option>Loading voices…</option></select>
-      <span id="voice-note" class="muted"></span>
+  <div id="form">
+    <section class="sec">
+      <header><h2>Text</h2><p>A full chapter is fine.</p></header>
+      <div>
+        <textarea id="text" placeholder="Paste a chapter here…" aria-label="Chapter text"></textarea>
+        <div class="row" style="margin-top:10px">
+          <label class="filebtn live-only">Upload .txt<input type="file" id="file" accept=".txt,text/plain" hidden></label>
+          <span class="live-only row" style="gap:14px">
+            <button class="link" data-sample="chapter">Use sample chapter</button>
+            <button class="link" data-sample="excerpt">Use short excerpt</button>
+          </span>
+        </div>
+        <div class="meta" id="est">—</div>
+      </div>
+    </section>
+
+    <section class="sec">
+      <header><h2>Narrator</h2><p>Any voice on your ElevenLabs account.</p></header>
+      <div>
+        <select id="voice" style="width:100%;max-width:420px" aria-label="Voice"><option>Loading voices…</option></select>
+        <div id="voice-note" class="hint" hidden></div>
+        <details class="clone" id="clone-box">
+          <summary>Clone a new voice</summary>
+          <form id="clone">
+            <input type="text" name="name" placeholder="Name, e.g. “Sarah – narration”" required>
+            <div><input type="file" name="files" accept="audio/*" multiple required>
+              <span class="sub">1–3 clean recordings of one speaker. No music or background noise.</span></div>
+            <label class="check"><input type="checkbox" name="consent" value="true" required>
+              <span>I have the speaker’s permission to clone this voice.</span></label>
+            <div class="row"><button type="submit">Create voice</button><span id="clone-msg" class="sub"></span></div>
+          </form>
+        </details>
+      </div>
+    </section>
+
+    <section class="sec">
+      <header><h2>Pronunciation</h2><p>Names and words the narrator should say a certain way.</p></header>
+      <div>
+        <div id="rules"></div>
+        <button id="add-rule" type="button" class="link">Add a word</button>
+        <p class="hint"><i>Spelling</i> rewrites the word before it’s read. <i>IPA</i> gives an exact phonetic spelling.</p>
+      </div>
+    </section>
+
+    <section class="sec">
+      <header><h2>Export</h2><p>MP3 (192 kbps) and WAV.</p></header>
+      <div>
+        <label class="check"><input type="checkbox" id="acx">
+          <span>Level for Audible (ACX)<span class="sub">Sets loudness to ACX specs and adds room tone at the start and end.</span></span></label>
+        <details class="tech" style="margin-top:18px;border:0;padding:0">
+          <summary>Advanced</summary>
+          <label class="row" style="margin-top:10px;gap:10px">Section length
+            <input type="number" id="limit" min="100" max="10000" step="100" value="9000" style="width:96px"> characters</label>
+          <p class="hint">Eleven v4 takes up to 10,000 characters per request. Sections always end at a paragraph or sentence.</p>
+        </details>
+      </div>
+    </section>
+
+    <div class="run">
+      <div class="row"><button class="primary" id="go">Generate audiobook</button><span id="go-note" class="sub"></span></div>
+      <div id="progress-card" hidden>
+        <div class="bar"><div id="p-bar"></div></div>
+        <div><span id="p-title"></span> <span id="p-msg" class="sub" style="display:inline"></span></div>
+        <div id="p-error" class="error"></div>
+      </div>
     </div>
-    <details style="margin-top:14px" id="clone-box">
-      <summary>Clone a voice (optional)</summary>
-      <form id="clone" class="row" style="margin-top:10px">
-        <input type="text" name="name" placeholder="Voice name" required>
-        <input type="file" name="files" accept="audio/*" multiple required>
-        <label class="row" style="gap:6px"><input type="checkbox" name="consent" value="true" required> I have permission to clone this voice.</label>
-        <button type="submit">Create clone</button>
-        <span id="clone-msg" class="muted"></span>
-      </form>
-      <p class="muted">1–3 clean samples of one speaker, no music or background noise. The clone is added to your ElevenLabs account.</p>
-    </details>
-  </section>
-
-  <section class="card">
-    <h2>3. Pronunciations</h2>
-    <div class="scroll"><table>
-      <thead><tr><th style="width:30%">Word</th><th>How to say it</th><th style="width:120px">Type</th><th style="width:40px"></th></tr></thead>
-      <tbody id="rules"></tbody>
-    </table></div>
-    <div class="row" style="margin-top:8px"><button id="add-rule" type="button">+ Add word</button>
-      <span class="muted">Spelling = replaced in the text before sending. IPA = sent as an ElevenLabs pronunciation dictionary (v4 supports phoneme rules; no SSML).</span></div>
-  </section>
-
-  <section class="card">
-    <h2>4. Options</h2>
-    <div class="row">
-      <label>Max characters per chunk <input type="number" id="limit" min="100" max="10000" step="100" value="9000" style="width:100px"></label>
-      <label class="row" style="gap:6px"><input type="checkbox" id="acx"> Level to ACX specs (RMS −23 to −18 dB, peak ≤ −3 dB)</label>
-    </div>
-    <p class="muted">Eleven v4 accepts 10,000 characters per request; 9,000 leaves a margin. Chunks break at paragraphs, then sentences.</p>
-  </section>
-
-  <div class="row" style="margin-bottom:16px">
-    <button class="primary" id="go">Generate</button>
-    <span id="go-note" class="muted"></span>
   </div>
 
-  <section class="card" id="progress-card" hidden>
-    <h2 id="p-title">Working…</h2>
-    <div class="bar"><div id="p-bar"></div></div>
-    <div id="p-msg" class="muted"></div>
-    <div id="p-error" class="error"></div>
-  </section>
-
-  <section class="card" id="result" hidden>
-    <h2>Result</h2>
+  <section id="result" hidden>
+    <h2>Your audiobook</h2>
+    <div id="r-line" class="sub" style="font-size:14px"></div>
     <audio id="player" controls preload="metadata"></audio>
-    <div class="row" id="seams"></div>
-    <div class="row" style="margin-top:10px" id="downloads"></div>
-    <div class="stats" id="r-stats"></div>
-    <h2 style="margin-top:18px">Loudness (measured with ffmpeg astats)</h2>
-    <div class="scroll"><table id="measure"></table></div>
-    <h2 style="margin-top:18px">Chunks</h2>
-    <div class="scroll"><table id="chunks"></table></div>
+    <div class="row">
+      <span id="seams" class="row" style="gap:8px"></span>
+      <span id="downloads" class="row" style="gap:14px;margin-left:auto"></span>
+    </div>
+    <p class="verdict" id="verdict"></p>
+    <details class="tech">
+      <summary>Technical details</summary>
+      <h3>Run</h3>
+      <dl class="facts" id="r-stats"></dl>
+      <h3>Loudness, measured</h3>
+      <div class="scroll"><table id="measure"></table></div>
+      <p class="hint" id="leveled"></p>
+      <h3>Sections</h3>
+      <div class="scroll"><table id="chunks"></table></div>
+    </details>
   </section>
 </main>
 
@@ -137,6 +234,9 @@
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => (n ?? 0).toLocaleString();
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const clock = (s) => { s = Math.max(0, Math.round(s)); const h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, x = String(s % 60).padStart(2, "0");
+  return h ? `${h}:${String(m).padStart(2, "0")}:${x}` : `${m}:${x}`; };
+const plural = (n, w) => `${fmt(n)} ${w}${n === 1 ? "" : "s"}`;
 let MODE = "live", REPLAY = null;
 
 async function getJSON(url, opts) {
@@ -147,29 +247,30 @@ async function getJSON(url, opts) {
 }
 const post = (url, data) => getJSON(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) });
 
-/* ---------- pronunciation table ---------- */
+/* ---------- pronunciation list ---------- */
 function addRule(rule = { word: "", say: "", kind: "alias" }, readOnly = false) {
-  const tr = document.createElement("tr");
-  tr.innerHTML = `<td><input type="text" class="w" placeholder="Siobhan"></td>
-    <td><input type="text" class="s" placeholder="Shiv-awn"></td>
-    <td><select class="k"><option value="alias">Spelling</option><option value="ipa">IPA</option></select></td>
-    <td><button type="button" title="Remove">×</button></td>`;
-  tr.querySelector(".w").value = rule.word; tr.querySelector(".s").value = rule.say; tr.querySelector(".k").value = rule.kind;
-  tr.querySelector("button").onclick = () => { tr.remove(); refreshEstimate(); };
-  tr.querySelectorAll("input,select").forEach((el) => { el.oninput = refreshEstimate; el.disabled = readOnly; });
-  tr.querySelector("button").disabled = readOnly;
-  $("rules").appendChild(tr);
+  const row = document.createElement("div");
+  row.className = "rule";
+  row.innerHTML = `<input type="text" class="w" placeholder="Siobhan" aria-label="Word">
+    <input type="text" class="s" placeholder="Shiv-awn" aria-label="Say it as">
+    <select class="k" aria-label="Type"><option value="alias">Spelling</option><option value="ipa">IPA</option></select>
+    <button type="button" class="x" title="Remove" aria-label="Remove">×</button>`;
+  row.querySelector(".w").value = rule.word; row.querySelector(".s").value = rule.say; row.querySelector(".k").value = rule.kind;
+  row.querySelector(".x").onclick = () => { row.remove(); refreshEstimate(); };
+  row.querySelectorAll("input,select").forEach((el) => { el.oninput = refreshEstimate; el.disabled = readOnly; });
+  row.querySelector(".x").hidden = readOnly;
+  $("rules").appendChild(row);
 }
-const rules = () => [...$("rules").querySelectorAll("tr")].map((tr) => ({
-  word: tr.querySelector(".w").value, say: tr.querySelector(".s").value, kind: tr.querySelector(".k").value,
+const rules = () => [...$("rules").querySelectorAll(".rule")].map((r) => ({
+  word: r.querySelector(".w").value, say: r.querySelector(".s").value, kind: r.querySelector(".k").value,
 })).filter((r) => r.word.trim() && r.say.trim());
 $("add-rule").onclick = () => addRule();
 
 /* ---------- estimate ---------- */
 function showEstimate(e) {
-  $("s-words").textContent = fmt(e.words); $("s-chars").textContent = fmt(e.characters);
-  $("s-chunks").textContent = e.chunks.length; $("s-cost").textContent = fmt(e.characters_billed);
-  $("s-sizes").textContent = e.chunks.length > 1 ? `(${e.chunks.map(fmt).join(" + ")})` : "";
+  if (!e.characters) { $("est").textContent = "—"; return; }
+  $("est").textContent = [plural(e.words, "word"), plural(e.chunks.length, "section"),
+    `${fmt(e.characters_billed)} ElevenLabs credits`].join("  ·  ");
 }
 let estTimer;
 function refreshEstimate() {
@@ -185,7 +286,7 @@ $("file").onchange = async (ev) => { const f = ev.target.files[0]; if (f) { $("t
 document.querySelectorAll("[data-sample]").forEach((b) => b.onclick = async () => {
   $("text").value = (await getJSON(`/api/sample/${b.dataset.sample}`)).text;
   if (b.dataset.sample === "excerpt") {
-    $("limit").value = 300;  // small chunks so a 30-second clip still has a seam to listen to
+    $("limit").value = 300;  // small sections so a 30-second clip still has a join to listen to
     if (!rules().some((r) => r.word === "Irene")) addRule({ word: "Irene", say: "Eye-ree-nee", kind: "alias" });
   } else $("limit").value = 9000;
   refreshEstimate();
@@ -195,9 +296,12 @@ document.querySelectorAll("[data-sample]").forEach((b) => b.onclick = async () =
 async function loadVoices(selectId) {
   try {
     const voices = await getJSON("/api/voices");
-    $("voice").innerHTML = voices.map((v) => `<option value="${esc(v.voice_id)}">${esc(v.name)}${v.category ? ` · ${esc(v.category)}` : ""}</option>`).join("");
+    $("voice").innerHTML = voices.map((v) => `<option value="${esc(v.voice_id)}">${esc(v.name)}${v.category === "cloned" ? " (cloned)" : ""}</option>`).join("");
     if (selectId) $("voice").value = selectId;
-  } catch (e) { $("voice").innerHTML = "<option value=''>Could not load voices</option>"; $("voice-note").textContent = e.message; }
+  } catch (e) {
+    $("voice").innerHTML = "<option value=''>Couldn’t load voices</option>";
+    $("voice-note").hidden = false; $("voice-note").textContent = e.message;
+  }
 }
 $("clone").onsubmit = async (ev) => {
   ev.preventDefault();
@@ -207,7 +311,7 @@ $("clone").onsubmit = async (ev) => {
   $("clone-msg").textContent = "Uploading…";
   try {
     const r = await getJSON("/api/clone", { method: "POST", body: form });
-    $("clone-msg").textContent = `Created “${r.name}”.`;
+    $("clone-msg").textContent = `“${r.name}” is ready and selected.`;
     await loadVoices(r.voice_id);
   } catch (e) { $("clone-msg").textContent = e.message; }
 };
@@ -216,33 +320,37 @@ $("clone").onsubmit = async (ev) => {
 function showProgress(title, done, total, msg) {
   $("progress-card").hidden = false; $("p-title").textContent = title;
   $("p-bar").style.width = total ? `${Math.round(100 * done / total)}%` : "0%";
-  $("p-msg").textContent = msg || "";
+  $("p-msg").textContent = msg && msg !== title ? msg : "";
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 $("go").onclick = async () => {
-  $("go").disabled = true; $("p-error").textContent = ""; $("result").hidden = true;
+  $("go").disabled = true; $("p-error").textContent = ""; if (MODE !== "replay") $("result").hidden = true;
   try { MODE === "replay" ? await replay() : await generate(); }
   finally { $("go").disabled = false; }
 };
 
 async function generate() {
   const voice = $("voice").selectedOptions[0];
-  if (!voice || !voice.value) { $("p-error").textContent = "Pick a voice first."; $("progress-card").hidden = false; return; }
+  if (!$("text").value.trim()) { showProgress("", 0, 0, ""); $("p-error").textContent = "Add some text first."; return; }
+  if (!voice || !voice.value) { showProgress("", 0, 0, ""); $("p-error").textContent = "Choose a narrator first."; return; }
   let job;
   try {
-    job = await post("/api/generate", { text: $("text").value, voice_id: voice.value, voice_name: voice.textContent.split(" · ")[0],
+    job = await post("/api/generate", { text: $("text").value, voice_id: voice.value, voice_name: voice.textContent.replace(/ \(cloned\)$/, ""),
                                         rules: rules(), chunk_limit: +$("limit").value || 9000, acx: $("acx").checked });
-  } catch (e) { showProgress("Could not start", 0, 0, ""); $("p-error").textContent = e.message; return; }
+  } catch (e) { showProgress("Couldn’t start.", 0, 0, ""); $("p-error").textContent = e.message; return; }
   while (true) {
     await sleep(600);
     const s = await getJSON(`/api/jobs/${job.job_id}`);
-    const title = s.stage === "export" ? "Joining & measuring audio…" : s.total ? `Chunk ${Math.min(s.done + 1, s.total)} of ${s.total}` : "Starting…";
-    showProgress(s.status === "complete" ? "Done" : title, s.stage === "export" || s.status === "complete" ? 1 : s.done, s.stage === "export" || s.status === "complete" ? 1 : s.total, s.message);
+    const finishing = s.stage === "export" || s.status === "complete";
+    const title = s.status === "complete" ? "Done." : s.stage === "export" ? "Joining sections and checking loudness…"
+      : s.total ? `Narrating section ${Math.min(s.done + 1, s.total)} of ${s.total}…` : "Starting…";
+    showProgress(title, finishing ? 1 : s.done, finishing ? 1 : s.total, s.status === "complete" ? "" : s.message);
     if (s.status === "complete") { renderResult(await getJSON(`/output/${s.run_id}/run.json`), `/output/${s.run_id}/`); return; }
     if (s.status === "failed") {
-      $("p-title").textContent = s.failed_chunk ? `Stopped at chunk ${s.failed_chunk} of ${s.total}` : "Failed";
-      $("p-error").textContent = s.error + (s.failed_chunk ? "\n\nFinished chunks are saved. Click Generate again with the same text and voice to resume — you won't pay for them twice." : "");
+      $("p-title").textContent = s.failed_chunk ? `Stopped at section ${s.failed_chunk} of ${s.total}.` : "Something went wrong.";
+      $("p-msg").textContent = "";
+      $("p-error").textContent = s.error + (s.failed_chunk ? "\n\nFinished sections are saved. Click Generate again with the same text and voice to pick up where it stopped. You won’t be charged for them twice." : "");
       return;
     }
   }
@@ -250,43 +358,54 @@ async function generate() {
 
 async function replay() {
   const n = REPLAY.chunks.length;
+  $("result").hidden = true;
   for (let i = 0; i < n; i++) {
-    showProgress(`Chunk ${i + 1} of ${n}`, i, n, `Replaying saved run — this chunk took ${REPLAY.chunks[i].generation_seconds}s on the real API`);
+    showProgress(`Narrating section ${i + 1} of ${n}…`, i, n, `(took ${REPLAY.chunks[i].generation_seconds}s on the real API)`);
     await sleep(Math.min(2500, 1000 * (REPLAY.chunks[i].generation_seconds || 1)));
   }
-  showProgress("Joining & measuring audio…", 1, 1, ""); await sleep(600);
-  showProgress("Done", 1, 1, "Replayed a real pre-generated run.");
+  showProgress("Joining sections and checking loudness…", 1, 1, ""); await sleep(600);
+  showProgress("Done.", 1, 1, "This was a replay of the saved run.");
   renderResult(REPLAY, "demo/");
 }
 
 /* ---------- result ---------- */
-function renderResult(run, base) {
+function renderResult(run, base, scroll = true) {
   $("result").hidden = false;
   const player = $("player"); player.src = base + run.outputs.mp3;
+  $("r-line").textContent = `${run.voice.name.split(" - ")[0]}  ·  ${clock(run.duration_seconds)}  ·  ${plural(run.words, "word")}`;
   $("seams").innerHTML = "";
   run.seams_seconds.forEach((t, i) => {
     const b = document.createElement("button");
-    b.textContent = `▶ Seam ${i + 1} → ${i + 2} (${t.toFixed(1)}s)`;
+    b.className = "seam";
+    b.textContent = run.seams_seconds.length > 1 ? `▶ Hear join ${i + 1} (${clock(t)})` : `▶ Hear the join (${clock(t)})`;
+    b.title = "Starts 4 seconds before the point where two sections meet";
     b.onclick = () => { player.currentTime = Math.max(0, t - 4); player.play(); };
     $("seams").appendChild(b);
   });
-  $("downloads").innerHTML = ["mp3", "wav"].map((k) => `<a href="${base}${run.outputs[k]}" download><button>Download ${k.toUpperCase()}</button></a>`).join("")
-    + `<a href="${base}run.json" target="_blank"><button>run.json</button></a>`;
-  $("r-stats").innerHTML = `<span>Voice <b>${esc(run.voice.name)}</b></span><span>Model <b>${run.model_id}</b></span>
-    <span>Length <b>${run.duration_seconds.toFixed(1)}s</b></span><span>Characters used <b>${fmt(run.characters_used)}</b></span>
-    <span>Run <b class="mono">${run.run_id}</b></span>`;
+  $("downloads").innerHTML = ["mp3", "wav"].map((k) => `<a class="link" href="${base}${run.outputs[k]}" download>Download ${k.toUpperCase()}</a>`).join("");
+
   const a = run.acx, m = a.measured_mp3, w = a.measured_wav;
   const db = (v) => v == null ? "silent" : `${v.toFixed(1)} dB`;
-  $("measure").innerHTML = `<tr><th></th><th>MP3 (192 kbps)</th><th>WAV</th><th>ACX target</th><th>Result</th></tr>
+  const pass = a.rms_ok && a.peak_ok;
+  $("verdict").innerHTML = pass
+    ? `<b class="ok">Meets Audible (ACX) loudness.</b> <span class="sub" style="display:inline">RMS ${db(m.rms_db)}, peak ${db(m.peak_db)}.</span>`
+    : `<b class="bad">Doesn’t meet ACX loudness yet.</b> <span class="sub" style="display:inline">${a.leveled ? "See technical details." : "Tick “Level for Audible (ACX)” and generate again."}</span>`;
+
+  $("r-stats").innerHTML = [["Voice", esc(run.voice.name)], ["Model", esc(run.model_id)],
+    ["Credits used", fmt(run.characters_used)], ["Run folder", `<span class="mono">output/${esc(run.run_id)}</span>`],
+    ["Log", `<a href="${base}run.json" target="_blank" class="mono">run.json</a>`]]
+    .map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+  $("measure").innerHTML = `<tr><th></th><th>MP3</th><th>WAV</th><th>ACX target</th><th></th></tr>
     <tr><td>RMS</td><td>${db(m.rms_db)}</td><td>${db(w.rms_db)}</td><td>−23 to −18 dB</td><td class="${a.rms_ok ? "ok" : "bad"}">${a.rms_ok ? "Pass" : "Out of range"}</td></tr>
-    <tr><td>Peak</td><td>${db(m.peak_db)}</td><td>${db(w.peak_db)}</td><td>≤ −3 dB</td><td class="${a.peak_ok ? "ok" : "bad"}">${a.peak_ok ? "Pass" : "Too hot"}</td></tr>
-    <tr><td colspan="5" class="muted">${a.leveled ? `Leveled: ${a.gain_db >= 0 ? "+" : ""}${a.gain_db} dB gain, limiter at −4 dB, 0.75 s head / 2 s tail room tone.` : "Not leveled (tick “Level to ACX specs” to fix)."}</td></tr>`;
-  $("chunks").innerHTML = `<tr><th>#</th><th>Chars</th><th>Length</th><th>Request ID</th><th>Conditioned on</th><th>Starts with</th></tr>`
-    + run.chunks.map((c, i) => `<tr><td>${c.index}</td><td>${fmt(c.characters)}</td><td>${(run.chunk_durations[i] ?? 0).toFixed(1)}s</td>
-      <td class="mono">${(c.request_id || "").slice(0, 14)}…</td>
-      <td class="mono">${[c.context?.previous_request_ids ? "prev IDs: " + c.context.previous_request_ids.map((x) => x.slice(0, 10) + "…").join(", ") : (c.context?.previous_text_chars ? "previous_text" : ""), c.context?.next_text_chars ? "next_text" : ""].filter(Boolean).join(" + ") || "—"}</td>
-      <td>${esc(c.text.slice(0, 48))}…</td></tr>`).join("");
-  $("result").scrollIntoView({ behavior: "smooth", block: "start" });
+    <tr><td>Peak</td><td>${db(m.peak_db)}</td><td>${db(w.peak_db)}</td><td>≤ −3 dB</td><td class="${a.peak_ok ? "ok" : "bad"}">${a.peak_ok ? "Pass" : "Too loud"}</td></tr>
+`;
+  $("leveled").textContent = a.leveled ? `Leveled: ${a.gain_db >= 0 ? "+" : ""}${a.gain_db} dB gain, limiter at −4 dB, 0.75 s room tone at the start and 2 s at the end.` : "Not leveled.";
+  $("chunks").innerHTML = `<tr><th>#</th><th>Characters</th><th>Length</th><th>Request ID</th><th>Continues from</th><th>Starts with</th></tr>`
+    + run.chunks.map((c, i) => `<tr><td>${c.index}</td><td>${fmt(c.characters)}</td><td>${clock(run.chunk_durations[i] ?? 0)}</td>
+      <td class="mono">${esc((c.request_id || "").slice(0, 12))}…</td>
+      <td class="mono">${c.context?.previous_request_ids ? c.context.previous_request_ids.map((x) => esc(x.slice(0, 8)) + "…").join(", ") : (c.context?.previous_text_chars ? "previous text" : "—")}</td>
+      <td class="wrap">${esc(c.text.slice(0, 60))}…</td></tr>`).join("");
+  if (scroll) $("result").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 /* ---------- boot ---------- */
@@ -294,24 +413,28 @@ function renderResult(run, base) {
   const cfg = await getJSON("config.json").catch(() => ({ mode: "live" }));
   MODE = cfg.mode;
   if (MODE === "mock") {
-    $("banner").style.display = "block";
-    $("banner").textContent = "Mock mode: no API calls, no credits. Each chunk is a tone clip the length of its text, so the whole pipeline (stitching, ffmpeg, leveling) can be tested for free.";
+    $("banner").hidden = false;
+    $("banner").textContent = "Test mode: no ElevenLabs calls and no credits used. Each section is a tone the length of its text, so everything else (joining, leveling, export) can be tried for free.";
   }
   if (MODE === "replay") {
     REPLAY = await getJSON("demo/run.json");
-    $("banner").style.display = "block";
-    $("banner").innerHTML = "<b>Demo:</b> this page replays a real run that was generated once with the ElevenLabs API (Eleven v4). Live generation is turned off on this hosted copy. Run the app locally to generate your own.";
+    $("banner").hidden = false;
+    $("banner").textContent = "This hosted page plays back a run made with the real ElevenLabs API. The app itself runs on your own computer with your own API key.";
+    $("showcase").hidden = false;
+    $("banner").after($("result"));
+    renderResult(REPLAY, "demo/", false);
     $("text").value = await (await fetch("demo/input.txt")).text(); $("text").readOnly = true;
     $("file").disabled = true; document.querySelectorAll(".live-only").forEach((el) => el.hidden = true);
     $("voice").innerHTML = `<option>${esc(REPLAY.voice.name)}</option>`; $("voice").disabled = true;
     $("clone").querySelectorAll("input,button").forEach((el) => el.disabled = true);
-    $("clone-msg").textContent = "Disabled in the hosted demo.";
-    REPLAY.pronunciations.forEach((r) => addRule(r, true)); $("add-rule").disabled = true;
+    $("clone-msg").textContent = "Turned off on the hosted copy.";
+    REPLAY.pronunciations.forEach((r) => addRule(r, true)); $("add-rule").hidden = true;
     $("limit").value = REPLAY.chunk_limit; $("limit").disabled = true;
     $("acx").checked = REPLAY.acx.leveled; $("acx").disabled = true;
     showEstimate({ words: REPLAY.words, characters: REPLAY.characters_input, characters_billed: REPLAY.characters_used,
                    chunks: REPLAY.chunks.map((c) => c.characters) });
-    $("go-note").textContent = "Replays the saved run.";
+    $("form").insertAdjacentHTML("afterbegin", `<h2 class="howto">How this run was made</h2>`);
+    $("go").textContent = "Replay the run";
     return;
   }
   addRule({ word: "Siobhan", say: "Shiv-awn", kind: "alias" });
